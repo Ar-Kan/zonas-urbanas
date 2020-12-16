@@ -1,0 +1,13 @@
+__pycache__/
+*$py.class
+
+build/
+.vs/
+zonas_urbanas_cpp/.vs/
+zonas_urbanas_cpp/packages/
+zonas_urbanas_cpp/x64/
+
+*.mtx
+*.csv
+zonas_urbanas_py/cache/
+*.dll

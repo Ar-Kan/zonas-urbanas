@@ -1,0 +1,1 @@
+DLLs oriundas do pacote OpenBLAS, disponibilizado através do NuGet, no Visual Studio
