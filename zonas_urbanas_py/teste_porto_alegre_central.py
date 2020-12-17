@@ -125,6 +125,10 @@ eiT.calcular()
 e_vectors = eiT.auto_vetores()
 e_values = eiT.auto_valores()[0]
 
+# e_values, e_vectors = scipy.linalg.eigh(
+#     L_dense
+# )
+
 # %%
 NOME_IMAGEM = 'grafo_porto_alegre'
 plot_eigen_graph(G, e_vectors, plot=True, save=True, nome=NOME_IMAGEM)
