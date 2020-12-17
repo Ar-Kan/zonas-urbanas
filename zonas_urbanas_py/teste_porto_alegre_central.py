@@ -1,5 +1,10 @@
 # %%
 
+from shapely.geometry import shape, GeometryCollection
+import json
+import itertools
+import fiona
+from shapely.geometry import shape
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
@@ -11,10 +16,14 @@ import osmnx as ox
 from osmnx.utils_graph import add_edge_lengths
 import random
 import zonas_urbanas
+import geopandas as gpd
+import momepy
+from contextily import add_basemap
+from libpysal import weights
+import peartree as pt
 
 ox.config(log_console=True, use_cache=True)
 
-# %%
 # Matplotlib inline
 try:
     get_ipython().run_line_magic('matplotlib', 'inline')
@@ -49,15 +58,41 @@ def plot_eigen_graph(graph, eigenvectors, plot=True, save=False, nome='grafo'):
         plt.close(fig)
 
 
+def plot_graph(graph):
+    options = {
+        'node_color': 'blue',
+        'node_size': 1.5,
+        'linewidths': 0,
+        'width': 0.1,
+        'arrows': False,
+        'with_labels': False
+    }
+    fig, ax = plt.subplots(figsize=(10, 10))
+    nx.draw(graph, ax=ax, **options)
+    plt.show()
+
+
 # %%
-G = ox.graph_from_place(
-    'Rolante, Rio Grande do Sul, Brazil',
+# G = ox.graph_from_place(
+#     'Porto Alegre, Rio Grande do Sul, Brazil',
+#     network_type='drive'
+# )
+REGIAO_CENTRAL = './ruas_central/regiao_central.json'
+regiao_central = gpd.read_file(REGIAO_CENTRAL)
+G = ox.graph_from_polygon(
+    regiao_central["geometry"].unary_union,
     network_type='walk'
 )
 G = add_edge_lengths(G)
 
 # %%
-# fig, ax = ox.plot_graph(G)
+# impute speed on all edges missing data
+G = ox.add_edge_speeds(G)
+# calculate travel time (seconds) for all edges
+G = ox.add_edge_travel_times(G)
+
+# %%
+fig, ax = ox.plot_graph(G)
 
 # %%
 # convert the OSMnx directed graph into an undirected one
@@ -82,28 +117,17 @@ D = scipy.sparse.spdiags(
 # calculating the Laplacian
 L = D - A
 
-# L_dense = L.todense()
+L_dense = L.todense()
 
 # %%
-NOME_ARQUIVO = './matriz_sparca_rolante.mtx'
-scipy.io.mmwrite(NOME_ARQUIVO, L, symmetry='general')
-
-
-# %%
-# eiT = zonas_urbanas.Eigen(L_dense)
-IGNORAR_LINHAS_ATE = 3
-eiT = zonas_urbanas.Eigen(NOME_ARQUIVO, L.shape[0], IGNORAR_LINHAS_ATE)
+eiT = zonas_urbanas.Eigen(L_dense)
 eiT.calcular()
 e_vectors = eiT.auto_vetores()
 e_values = eiT.auto_valores()[0]
 
-# e_values, e_vectors = scipy.linalg.eigh(
-#     L_dense
-# )
 # %%
-# plot_eigen_graph(G, e_vectors)
-NOME_IMAGEM = 'grafo_rolante'
-plot_eigen_graph(G, e_vectors, plot=False, save=True, nome=NOME_IMAGEM)
+NOME_IMAGEM = 'grafo_porto_alegre'
+plot_eigen_graph(G, e_vectors, plot=True, save=True, nome=NOME_IMAGEM)
 
 # %%
 x = e_vectors[:, 1]
@@ -128,7 +152,6 @@ cores_nodes = [
     cores_grupos[nodes_groupings.get(node)] for node in G.nodes()
 ]
 
-# %%
 ox.plot_graph(
     G,
     node_color=cores_nodes,
